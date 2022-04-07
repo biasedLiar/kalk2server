@@ -5,30 +5,26 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 
 /**
  * Provides database service for login.
  */
 public class LogInService {
-    public User findUser(String userEmail, String userPasswordHash) throws SQLException {
-        System.out.println("Searching for user: " + userEmail + ", password " + userPasswordHash);
+    public Person findPerson(String username, String personPasswordHash) throws SQLException {
+        System.out.println("Searching for person: " + username + ", password " + personPasswordHash);
         Connection connection = DatabaseService.getInstance().getConnection();
         PreparedStatement statement = connection.prepareStatement(
-                "SELECT * FROM \"user\" WHERE email = ? AND password_hash = ?;");
-        statement.setString(1, userEmail);
-        statement.setString(2, userPasswordHash);
+                "SELECT * FROM person WHERE username = ? AND password_hash = ?;");
+        statement.setString(1, username);
+        statement.setString(2, personPasswordHash);
         ResultSet results = statement.executeQuery();
 
         if (results.next()) {
-            User user = new User();
-            user.setID(results.getInt("id"));
-            user.setFirstName(results.getString("first_name"));
-            user.setLastName(results.getString("last_name"));
-            user.setEmail(results.getString("email"));
-            user.setAdmin(results.getBoolean("is_admin"));
-            user.setPasswordHash(results.getString("password_hash"));
-            return user;
+            Person person = new Person();
+            person.setId(results.getInt("id"));
+            person.setUsername(results.getString("username"));
+            person.setPasswordHash(results.getString("password_hash"));
+            return person;
         }
         return null;
     }

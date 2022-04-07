@@ -1,26 +1,20 @@
 package eliasoving4.demo;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.web.bind.annotation.*;
+
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.AuthorityUtils;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 
 /**
  * Responsible for validating and serving requests to create tokens.
@@ -36,23 +30,23 @@ public class TokenController {
 
     /**
      * Validates and fullfills token creation request.
-     * @param email the email of the user that we are creating token for
-     * @param password the password hash of the user we are creating token for.
-     * @return List of strings with the user that is logged in and the token that was minted.
+     * @param username the username of the person that we are creating token for
+     * @param password the password hash of the person we are creating token for.
+     * @return List of strings with the person that is logged in and the token that was minted.
      * @throws Exception
      */
     @PostMapping(value = "")
     @ResponseStatus(value = HttpStatus.CREATED)
-    public List<Object> generateToken(@RequestParam("email") final String email,
+    public List<Object> generateToken(@RequestParam("username") final String username,
                                       @RequestParam("password") final String password) throws Exception {
-        // check username and password are valid to access token
-        User user = logInService.findUser(email, password);
+        // check personname and password are valid to access token
+        Person person = logInService.findPerson(username, password);
         // note that subsequent request to the API need this token
         List<Object> strings = new ArrayList<>();
-        if (user != null) {
-            user.setPasswordHash("");
-            strings.add(generateToken(user));
-            strings.add(user);
+        if (person != null) {
+            person.setPasswordHash("");
+            strings.add(generateToken(person));
+            strings.add(person);
             return strings;
         }
         System.out.println("Access denied, wrong credentials....");
@@ -61,22 +55,18 @@ public class TokenController {
     }
 
     /**
-     * Creates a token given a user.
-     * @param user The user we are creating token for
+     * Creates a token given a person.
+     * @param person The person we are creating token for
      * @return A string of the token.
      * @throws Exception
      */
-    public String generateToken(User user) throws Exception {
+    public String generateToken(Person person) throws Exception {
         Key key = Keys.hmacShaKeyFor(keyStr.getBytes("UTF-8"));
-        List<GrantedAuthority> grantedAuthorities;
-        if (user.isAdmin()) {
-            grantedAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList("ADMIN");
-        } else {
-            grantedAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList("USER");
-        }
+        List<GrantedAuthority> grantedAuthorities = AuthorityUtils.commaSeparatedStringToAuthorityList("ADMIN");
 
-        Claims claims = Jwts.claims().setSubject(Integer.toString(user.getID()));
-        claims.put("userId", Integer.toString(user.getID()));
+
+        Claims claims = Jwts.claims().setSubject(Integer.toString(person.getId()));
+        claims.put("personId", Integer.toString(person.getId()));
         claims.put("authorities", grantedAuthorities
                 .stream()
                 .map(GrantedAuthority::getAuthority)
@@ -84,7 +74,7 @@ public class TokenController {
 
         return Jwts.builder()
                 .setId(UUID.randomUUID().toString())
-                .setSubject(Integer.toString(user.getID()))
+                .setSubject(Integer.toString(person.getId()))
                 .setClaims(claims)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 600000000))

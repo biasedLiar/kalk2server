@@ -3,7 +3,6 @@ package eliasoving4.demo;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import org.apache.el.parser.Token;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,7 +13,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URL;
 import java.security.Key;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,6 +35,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
         try {
+            System.out.println("Looking for token");
             Key key = Keys.hmacShaKeyFor(TokenController.keyStr.getBytes("UTF-8"));
 
             // expects JWT in the header
@@ -45,6 +44,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 
             // check Authorization header exists
             if (authenticationHeader == null || !authenticationHeader.startsWith(PREFIX)){
+                System.out.println("No Auth");
                 SecurityContextHolder.clearContext();
             } else {
                 // get token and claims
@@ -59,19 +59,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
                             authorities.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList()));
                     SecurityContextHolder.getContext().setAuthentication(auth);
                     //Checks that the user id param is the same as the userid in the token.
-                    String userId = "";
-                    String[] params = request.getQueryString().split("&");
-                    for (int i = 0; i < params.length; i++) {
-                        if (params[i].split("=")[0].equals("userId")){
-                            userId = params[i].split("=")[1];
-                        }
-                    }
-                    if (Integer.parseInt(claims.getBody().get("userId", String.class)) == Integer.parseInt(userId)){
-                        //System.out.println("User ids match");
-                    } else {
-                        System.out.println("User id sent does not match user id in token.");
-                        SecurityContextHolder.clearContext();
-                    }
+
                 } else {
                     System.out.println("no auth.");
                     SecurityContextHolder.clearContext();
